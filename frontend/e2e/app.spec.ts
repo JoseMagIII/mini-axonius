@@ -61,7 +61,7 @@ test('ask tab explains how to connect Claude when no key is set', async ({ page,
 
   await page.goto('/')
   await page.getByRole('tab', { name: 'Ask' }).click()
-  await expect(page.getByText('Claude isn’t connected')).toBeVisible()
+  await expect(page.getByText("Claude isn't connected")).toBeVisible()
   await page.getByRole('button', { name: 'Which production servers have no EDR agent?' }).click()
   await expect(page.getByText('Add ANTHROPIC_API_KEY to .env to chat with the agent.')).toBeVisible()
   await page.screenshot({ path: 'test-results/ask-no-key.png', fullPage: true })

@@ -34,7 +34,7 @@ export default function App() {
             </span>
             <div>
               <p className="leading-tight font-semibold">Acme asset inventory</p>
-              <p className="text-xs text-muted-foreground">Every asset, every source, one place</p>
+              <p className="text-xs text-muted-foreground">Docker, EDR, identity, and NVD data merged</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

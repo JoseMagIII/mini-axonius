@@ -1,5 +1,9 @@
 .PHONY: setup infra infra-down db sync api web dev test lint rogue rogue-down
 
+# Follow the active Docker context, since Docker Desktop, Colima, and OrbStack use different sockets.
+export DOCKER_HOST ?= $(shell docker context inspect --format '{{.Endpoints.docker.Host}}' 2>/dev/null)
+export TF_VAR_docker_host = $(DOCKER_HOST)
+
 setup:  ## Install backend and frontend dependencies
 	cd backend && uv sync
 	cd frontend && pnpm install

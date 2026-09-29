@@ -11,7 +11,7 @@ from app.config import get_settings
 
 READER_ROLE = "agent_reader"
 
-# Each gap is a view named gap_<name> in views.sql.
+# Each gap has a matching gap_<name> view.
 GAPS = ("missing_edr", "vulnerable_software", "orphaned_owner", "ghost_assets")
 
 

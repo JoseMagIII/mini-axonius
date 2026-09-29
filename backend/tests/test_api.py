@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 import anthropic
 import httpx
+import pydantic
 import pytest
 from fastapi.testclient import TestClient
 from langchain_core.messages import AIMessage
@@ -175,3 +176,12 @@ def test_risk_summary_endpoint_returns_the_report(client, monkeypatch):
 
     monkeypatch.setattr(risk, "summarize", fake_summarize)
     assert client.post("/api/risk-summary").json()["overall_risk"] == "high"
+
+
+async def test_risk_summary_rejects_a_malformed_report(clean_db):
+    try:
+        risk.RiskReport.model_validate({"overall_risk": "catastrophic"})
+    except pydantic.ValidationError as error:
+        invalid = error
+    with pytest.raises(risk.RiskSummaryError, match="expected format"):
+        await risk.summarize(FakeAnthropic(error=invalid))

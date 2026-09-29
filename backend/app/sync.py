@@ -43,7 +43,9 @@ def _insert_identities(conn: psycopg.Connection, run_id: int, identities: list[I
         )
 
 
-def _save_vulnerabilities(conn, software: str, version: str, origin: str, vulns: list[nvd.Vulnerability]) -> None:
+def _save_vulnerabilities(
+    conn: psycopg.Connection, software: str, version: str, origin: str, vulns: list[nvd.Vulnerability]
+) -> None:
     with conn.transaction():
         conn.execute("DELETE FROM nvd_lookups WHERE software = %s AND software_version = %s", [software, version])
         conn.execute(
@@ -64,31 +66,40 @@ def refresh_vulnerabilities(
     """Looks up each software version in NVD unless a fresh cached copy exists. Returns where each came from."""
     settings = get_settings()
     outcome = {}
+    nvd_down = False
     for software, version in sorted(versions):
         key = f"{software}:{version}"
         cpe = nvd.cpe_for(software, version)
         if cpe is None:
             outcome[key] = "not tracked"
             continue
-        fresh = conn.execute(
-            """SELECT origin FROM nvd_lookups WHERE software = %s AND software_version = %s
-               AND origin = 'nvd' AND fetched_at > now() - make_interval(hours => %s)""",
-            [software, version, settings.nvd_cache_hours],
+        # Fallback copies are retried hourly so an outage doesn't slow every sync.
+        cached = conn.execute(
+            """SELECT origin, fetched_at > now() - CASE origin WHEN 'nvd' THEN make_interval(hours => %s)
+                                                              ELSE interval '1 hour' END AS fresh
+               FROM nvd_lookups WHERE software = %s AND software_version = %s""",
+            [settings.nvd_cache_hours, software, version],
         ).fetchone()
-        if fresh:
+        if cached and cached["fresh"]:
             outcome[key] = "cached"
             continue
-        try:
-            _save_vulnerabilities(conn, software, version, "nvd", client.vulnerabilities(cpe))
-            outcome[key] = "nvd"
-        except nvd.NvdUnavailable as error:
-            log.warning("NVD lookup for %s failed: %s", key, error)
-            saved = nvd.load_fallback(settings.data_dir / "nvd_fallback.json", software, version)
-            if saved is None:
-                outcome[key] = "unavailable"
-            else:
-                _save_vulnerabilities(conn, software, version, "fallback", saved)
-                outcome[key] = "fallback"
+        if not nvd_down:
+            try:
+                _save_vulnerabilities(conn, software, version, "nvd", client.vulnerabilities(cpe))
+                outcome[key] = "nvd"
+                continue
+            except nvd.NvdUnavailable as error:
+                log.warning("NVD lookup for %s failed, skipping NVD for the rest of this sync: %s", key, error)
+                nvd_down = True
+        if cached:
+            outcome[key] = "stale cache"
+            continue
+        saved = nvd.load_fallback(settings.data_dir / "nvd_fallback.json", software, version)
+        if saved is None:
+            outcome[key] = "unavailable"
+        else:
+            _save_vulnerabilities(conn, software, version, "fallback", saved)
+            outcome[key] = "fallback"
     return outcome
 
 

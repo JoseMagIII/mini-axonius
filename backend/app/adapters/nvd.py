@@ -57,10 +57,10 @@ class NvdClient:
     """Pages through NVD results and backs off on rate limits (5 requests per 30s without a key)."""
 
     def __init__(
-        self, api_key: str | None = None, http: httpx.Client | None = None, max_attempts: int = 4, backoff: float = 6.0
+        self, api_key: str | None = None, http: httpx.Client | None = None, max_attempts: int = 3, backoff: float = 2.0
     ):
         headers = {"apiKey": api_key} if api_key else {}
-        self.http = http or httpx.Client(timeout=30, headers=headers)
+        self.http = http or httpx.Client(timeout=10, headers=headers)
         self.max_attempts = max_attempts
         self.backoff = backoff
 

@@ -1,5 +1,5 @@
 locals {
-  # Acme's fleet lives in data/fleet.json so the tests use the same servers. Add one there with one line.
+  # Shared with the backend tests so the demo and the tests can't drift apart.
   servers = jsondecode(file("${path.module}/../data/fleet.json"))
 }
 

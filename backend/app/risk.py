@@ -5,7 +5,7 @@ from typing import Literal
 
 import anthropic
 from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from app.config import get_settings
 from app.db import GAPS, connect
@@ -73,6 +73,8 @@ async def summarize(client: anthropic.AsyncAnthropic | None = None) -> RiskRepor
         raise RiskSummaryError(f"Claude returned an error ({error.status_code}): {error.message}", 502) from error
     except anthropic.APIConnectionError as error:
         raise RiskSummaryError("Couldn't reach the Claude API. Check your network.", 502) from error
+    except ValidationError as error:
+        raise RiskSummaryError("Claude's report didn't match the expected format. Try again.", 502) from error
 
     if response.parsed_output is None:
         raise RiskSummaryError(f"Claude didn't return a report (stop reason: {response.stop_reason}).", 502)

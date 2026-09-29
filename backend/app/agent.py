@@ -138,7 +138,7 @@ def build_agent(model: BaseChatModel | None = None, max_steps: int | None = None
     graph = StateGraph(AgentState)
     graph.add_node("agent", agent)
     graph.add_node("guardrail", guardrail)
-    graph.add_node("tools", ToolNode(TOOLS))
+    graph.add_node("tools", ToolNode(TOOLS, handle_tool_errors=True))
     graph.add_edge(START, "agent")
     graph.add_conditional_edges("agent", after_agent, ["guardrail", END])
     graph.add_conditional_edges("guardrail", after_guardrail, ["agent", "tools"])

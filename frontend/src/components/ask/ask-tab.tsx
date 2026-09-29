@@ -11,7 +11,7 @@ const SUGGESTIONS = [
   'Which production servers have no EDR agent?',
   'Which servers run software with critical CVEs?',
   'Who owns servers but is disabled or unknown to the identity provider?',
-  'Which active users don’t have MFA?',
+  "Which active users don't have MFA?",
   'Delete the disabled users',
 ]
 
@@ -64,14 +64,14 @@ export function AskTab({ claudeReady }: { claudeReady: boolean }) {
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
       {!claudeReady && (
         <Alert>
-          <AlertTitle>Claude isn’t connected</AlertTitle>
+          <AlertTitle>Claude isn't connected</AlertTitle>
           <AlertDescription>Add ANTHROPIC_API_KEY to .env and restart the API to chat with the agent.</AlertDescription>
         </Alert>
       )}
 
       {turns.length === 0 ? (
         <div className="rounded-xl border border-dashed p-6">
-          <h2 className="font-medium">Ask about Acme’s assets</h2>
+          <h2 className="font-medium">Ask about Acme's assets</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             The agent reads the schema, writes SQL, and runs it as a read-only user. Try one of these:
           </p>

@@ -89,10 +89,29 @@ def test_nvd_results_are_cached_between_syncs(clean_db):
 
 
 def test_nvd_outage_uses_the_saved_fallback(clean_db):
-    result = sync.run_sync(FakeDocker(), FakeNvd(fail=True))
+    client = FakeNvd(fail=True)
+    result = sync.run_sync(FakeDocker(), client)
     assert result["vulnerability_sources"]["nginx:1.21.6"] == "fallback"
     assert query("SELECT origin FROM nvd_lookups WHERE software_version = '1.21.6'")[0]["origin"] == "fallback"
     assert "web-01" in hostnames("gap_vulnerable_software")
+    assert len(client.calls) == 1  # One failure stops NVD calls for the rest of the sync
+
+
+def test_fallback_copies_are_not_retried_on_every_sync(clean_db):
+    sync.run_sync(FakeDocker(), FakeNvd(fail=True))
+    client = FakeNvd(fail=True)
+    result = sync.run_sync(FakeDocker(), client)
+    assert client.calls == []
+    assert result["vulnerability_sources"]["redis:6.0.20"] == "cached"
+
+
+def test_nvd_outage_keeps_an_expired_cache(clean_db):
+    sync.run_sync(FakeDocker(), FakeNvd())
+    with psycopg.connect(clean_db, autocommit=True) as conn:
+        conn.execute("UPDATE nvd_lookups SET fetched_at = now() - interval '3 days'")
+    result = sync.run_sync(FakeDocker(), FakeNvd(fail=True))
+    assert result["vulnerability_sources"]["redis:6.0.20"] == "stale cache"
+    assert query("SELECT count(*) AS n FROM vulnerabilities WHERE software = 'redis'")[0]["n"] == 1
 
 
 def test_a_failed_sync_keeps_the_last_good_data(clean_db):

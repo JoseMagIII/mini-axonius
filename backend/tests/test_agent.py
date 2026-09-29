@@ -1,6 +1,8 @@
+import psycopg
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 
+from app import agent as agent_module
 from app import sync
 from app.agent import build_agent, events_from_update
 from tests.conftest import FakeDocker, FakeNvd, calls, scripted
@@ -101,3 +103,17 @@ def test_threads_do_not_share_memory(synced):
     run(agent, "Question A", thread="a")
     run(agent, "Question B", thread="b")
     assert "Question A" not in [m.content for m in model.seen[1]]
+
+
+def test_a_failing_tool_keeps_the_thread_usable(synced, monkeypatch):
+    def broken_connection():
+        raise psycopg.OperationalError("connection refused")
+
+    monkeypatch.setattr(agent_module, "reader_connection", broken_connection)
+    model = scripted(calls(("get_schema", {})), AIMessage("The database is down."), AIMessage("Still here."))
+    agent = build_agent(model)
+
+    events = run(agent, "What's in the schema?", thread="broken")
+    assert [e["type"] for e in events] == ["tool_call", "error", "answer"]
+    assert "connection refused" in events[1]["message"]
+    assert run(agent, "Are you there?", thread="broken")[-1]["text"] == "Still here."
