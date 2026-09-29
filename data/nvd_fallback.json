@@ -1,0 +1,147 @@
+{
+  "nginx:1.21.6": [
+    {
+      "cve_id": "CVE-2022-41741",
+      "severity": "HIGH",
+      "cvss_score": 7.0,
+      "published_at": "2022-10-19T22:15:12.647",
+      "summary": "NGINX Open Source before versions 1.23.2 and 1.22.1, NGINX Open Source Subscription before versions R2 P1 and R1 P1, and NGINX Plus before versions R27 P1 and R26 P1 have a vulnerability in the module ngx_http_mp4_module that might allow a local attacker to corrupt NGINX worker memory, resulting in its termination or potential other impact using a specially crafted audio or video file. The issue affects only NGINX products that are built with the ngx_http_mp4_module, when the mp4 directive is used in the configuration file. Further, the attack is possible only if an attacker can trigger processing of a specially crafted audio or video file with the module ngx_http_mp4_module."
+    },
+    {
+      "cve_id": "CVE-2022-41742",
+      "severity": "HIGH",
+      "cvss_score": 7.1,
+      "published_at": "2022-10-19T22:15:12.717",
+      "summary": "NGINX Open Source before versions 1.23.2 and 1.22.1, NGINX Open Source Subscription before versions R2 P1 and R1 P1, and NGINX Plus before versions R27 P1 and R26 P1 have a vulnerability in the module ngx_http_mp4_module that might allow a local attacker to cause a worker process crash, or might result in worker process memory disclosure by using a specially crafted audio or video file. The issue affects only NGINX products that are built with the module ngx_http_mp4_module, when the mp4 directive is used in the configuration file. Further, the attack is possible only if an attacker can trigger processing of a specially crafted audio or video file with the module ngx_http_mp4_module."
+    },
+    {
+      "cve_id": "CVE-2023-44487",
+      "severity": "HIGH",
+      "cvss_score": 7.5,
+      "published_at": "2023-10-10T14:15:10.883",
+      "summary": "The HTTP/2 protocol allows a denial of service (server resource consumption) because request cancellation can reset many streams quickly, as exploited in the wild in August through October 2023."
+    },
+    {
+      "cve_id": "CVE-2025-23419",
+      "severity": "MEDIUM",
+      "cvss_score": 5.3,
+      "published_at": "2025-02-05T18:15:33.347",
+      "summary": "When multiple server blocks are configured to share the same IP address and port, an attacker can use session resumption to bypass client certificate authentication requirements on these servers. This vulnerability arises when  TLS Session Tickets https://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_session_ticket_key  are used and/or the  SSL session cache https://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_session_cache  are used in the default server and the default server is performing client certificate authentication.\u00a0\u00a0\n\nNote: Software versions which have reached End of Technical Support (EoTS) are not evaluated."
+    }
+  ],
+  "nginx:1.29.1": [],
+  "redis:6.0.20": [
+    {
+      "cve_id": "CVE-2022-24735",
+      "severity": "LOW",
+      "cvss_score": 3.9,
+      "published_at": "2022-04-27T20:15:09.730",
+      "summary": "Redis is an in-memory database that persists on disk. By exploiting weaknesses in the Lua script execution environment, an attacker with access to Redis prior to version 7.0.0 or 6.2.7 can inject Lua code that will execute with the (potentially higher) privileges of another Redis user. The Lua script execution environment in Redis provides some measures that prevent a script from creating side effects that persist and can affect the execution of the same, or different script, at a later time. Several weaknesses of these measures have been publicly known for a long time, but they had no security impact as the Redis security model did not endorse the concept of users or privileges. With the introduction of ACLs in Redis 6.0, these weaknesses can be exploited by a less privileged users to inject Lua code that will execute at a later time, when a privileged user executes a Lua script. The problem is fixed in Redis versions 7.0.0 and 6.2.7. An additional workaround to mitigate this problem without patching the redis-server executable, if Lua scripting is not being used, is to block access to `SCRIPT LOAD` and `EVAL` commands using ACL rules."
+    },
+    {
+      "cve_id": "CVE-2022-24736",
+      "severity": "LOW",
+      "cvss_score": 3.3,
+      "published_at": "2022-04-27T20:15:09.857",
+      "summary": "Redis is an in-memory database that persists on disk. Prior to versions 6.2.7 and 7.0.0, an attacker attempting to load a specially crafted Lua script can cause NULL pointer dereference which will result with a crash of the redis-server process. The problem is fixed in Redis versions 7.0.0 and 6.2.7. An additional workaround to mitigate this problem without patching the redis-server executable, if Lua scripting is not being used, is to block access to `SCRIPT LOAD` and `EVAL` commands using ACL rules."
+    },
+    {
+      "cve_id": "CVE-2022-3647",
+      "severity": "LOW",
+      "cvss_score": 3.1,
+      "published_at": "2022-10-21T18:15:10.183",
+      "summary": "** DISPUTED ** A vulnerability, which was classified as problematic, was found in Redis up to 6.2.7/7.0.5. Affected is the function sigsegvHandler of the file debug.c of the component Crash Report. The manipulation leads to denial of service. The complexity of an attack is rather high. The exploitability is told to be difficult. The real existence of this vulnerability is still doubted at the moment. Upgrading to version 6.2.8 and 7.0.6 is able to address this issue. The patch is identified as 0bf90d944313919eb8e63d3588bf63a367f020a3. It is recommended to apply a patch to fix this issue. VDB-211962 is the identifier assigned to this vulnerability. NOTE: The vendor claims that this is not a DoS because it applies to the crash logging mechanism which is triggered after a crash has occurred."
+    },
+    {
+      "cve_id": "CVE-2021-31294",
+      "severity": "MEDIUM",
+      "cvss_score": 5.9,
+      "published_at": "2023-07-15T23:15:09.203",
+      "summary": "Redis before 6cbea7d allows a replica to cause an assertion failure in a primary server by sending a non-administrative command (specifically, a SET command). NOTE: this was fixed for Redis 6.2.x and 7.x in 2021. Versions before 6.2 were not intended to have safety guarantees related to this."
+    },
+    {
+      "cve_id": "CVE-2023-45145",
+      "severity": "LOW",
+      "cvss_score": 3.6,
+      "published_at": "2023-10-18T21:15:09.560",
+      "summary": "Redis is an in-memory database that persists on disk. On startup, Redis begins listening on a Unix socket before adjusting its permissions to the user-provided configuration. If a permissive umask(2) is used, this creates a race condition that enables, during a short period of time, another process to establish an otherwise unauthorized connection. This problem has existed since Redis 2.6.0-RC1. This issue has been addressed in Redis versions 7.2.2, 7.0.14 and 6.2.14. Users are advised to upgrade. For users unable to upgrade, it is possible to work around the problem by disabling Unix sockets, starting Redis with a restrictive umask, or storing the Unix socket file in a protected directory."
+    },
+    {
+      "cve_id": "CVE-2024-31228",
+      "severity": "MEDIUM",
+      "cvss_score": 5.5,
+      "published_at": "2024-10-07T20:15:05.277",
+      "summary": "Redis is an open source, in-memory database that persists on disk. Authenticated users can trigger a denial-of-service by using specially crafted, long string match patterns on supported commands such as `KEYS`, `SCAN`, `PSUBSCRIBE`, `FUNCTION LIST`, `COMMAND LIST` and ACL definitions. Matching of extremely long patterns may result in unbounded recursion, leading to stack overflow and process crash. This problem has been fixed in Redis versions 6.2.16, 7.2.6, and 7.4.1. Users are advised to upgrade. There are no known workarounds for this vulnerability."
+    },
+    {
+      "cve_id": "CVE-2024-31449",
+      "severity": "HIGH",
+      "cvss_score": 7.0,
+      "published_at": "2024-10-07T20:15:05.507",
+      "summary": "Redis is an open source, in-memory database that persists on disk. An authenticated user may use a specially crafted Lua script to trigger a stack buffer overflow in the bit library, which may potentially lead to remote code execution. The problem exists in all versions of Redis with Lua scripting. This problem has been fixed in Redis versions 6.2.16, 7.2.6, and 7.4.1. Users are advised to upgrade. There are no known workarounds for this vulnerability."
+    },
+    {
+      "cve_id": "CVE-2025-21605",
+      "severity": "HIGH",
+      "cvss_score": 7.5,
+      "published_at": "2025-04-23T16:15:34.770",
+      "summary": "Redis is an open source, in-memory database that persists on disk. In versions starting at 2.6 and prior to 7.4.3, An unauthenticated client can cause unlimited growth of output buffers, until the server runs out of memory or is killed. By default, the Redis configuration does not limit the output buffer of normal clients (see client-output-buffer-limit). Therefore, the output buffer can grow unlimitedly over time. As a result, the service is exhausted and the memory is unavailable. When password authentication is enabled on the Redis server, but no password is provided, the client can still cause the output buffer to grow from \"NOAUTH\" responses until the system will run out of memory. This issue has been patched in version 7.4.3. An additional workaround to mitigate this problem without patching the redis-server executable is to block access to prevent unauthenticated users from connecting to Redis. This can be done in different ways. Either using network access control tools like firewalls, iptables, security groups, etc, or enabling TLS and requiring users to authenticate using client side certificates."
+    },
+    {
+      "cve_id": "CVE-2025-32023",
+      "severity": "HIGH",
+      "cvss_score": 7.0,
+      "published_at": "2025-07-07T16:15:22.830",
+      "summary": "Redis is an open source, in-memory database that persists on disk. From 2.8 to before 8.0.3, 7.4.5, 7.2.10, and 6.2.19, an authenticated user may use a specially crafted string to trigger a stack/heap out of bounds write on hyperloglog operations, potentially leading to remote code execution. The bug likely affects all Redis versions with hyperloglog operations implemented. This vulnerability is fixed in 8.0.3, 7.4.5, 7.2.10, and 6.2.19. An additional workaround to mitigate the problem without patching the redis-server executable is to prevent users from executing hyperloglog operations. This can be done using ACL to restrict HLL commands."
+    },
+    {
+      "cve_id": "CVE-2025-48367",
+      "severity": "HIGH",
+      "cvss_score": 7.5,
+      "published_at": "2025-07-07T16:15:24.063",
+      "summary": "Redis is an open source, in-memory database that persists on disk. An unauthenticated connection can cause repeated IP protocol errors, leading to client starvation and, ultimately, a denial of service. This vulnerability is fixed in 8.0.3, 7.4.5, 7.2.10, and 6.2.19."
+    },
+    {
+      "cve_id": "CVE-2025-46817",
+      "severity": "HIGH",
+      "cvss_score": 7.0,
+      "published_at": "2025-10-03T18:15:35.527",
+      "summary": "Redis is an open source, in-memory database that persists on disk. Versions 8.2.1 and below allow an authenticated user to use a specially crafted Lua script to cause an integer overflow and potentially lead to remote code execution The problem exists in all versions of Redis with Lua scripting. This issue is fixed in version 8.2.2."
+    },
+    {
+      "cve_id": "CVE-2025-46818",
+      "severity": "MEDIUM",
+      "cvss_score": 6.0,
+      "published_at": "2025-10-03T19:15:43.330",
+      "summary": "Redis is an open source, in-memory database that persists on disk. Versions 8.2.1 and below allow an authenticated user to use a specially crafted Lua script to manipulate different LUA objects and potentially run their own code in the context of another user. The problem exists in all versions of Redis with LUA scripting. This issue is fixed in version 8.2.2. A workaround to mitigate the problem without patching the redis-server executable is to prevent users from executing LUA scripts. This can be done using ACL to block a script by restricting both the EVAL and FUNCTION command families."
+    },
+    {
+      "cve_id": "CVE-2025-46819",
+      "severity": "MEDIUM",
+      "cvss_score": 6.3,
+      "published_at": "2025-10-03T19:15:43.490",
+      "summary": "Redis is an open source, in-memory database that persists on disk. Versions 8.2.1 and below allow an authenticated user to use a specially crafted LUA script to read out-of-bound data or crash the server and subsequent denial of service. The problem exists in all versions of Redis with Lua scripting. This issue is fixed in version 8.2.2. To workaround this issue without patching the redis-server executable is to prevent users from executing Lua scripts. This can be done using ACL to block a script by restricting both the EVAL and FUNCTION command families."
+    },
+    {
+      "cve_id": "CVE-2025-49844",
+      "severity": "CRITICAL",
+      "cvss_score": 9.9,
+      "published_at": "2025-10-03T20:15:32.823",
+      "summary": "Redis is an open source, in-memory database that persists on disk. Versions 8.2.1 and below allow an authenticated user to use a specially crafted Lua script to manipulate the garbage collector, trigger a use-after-free and potentially lead to remote code execution. The problem exists in all versions of Redis with Lua scripting. This issue is fixed in version 8.2.2. To workaround this issue without patching the redis-server executable is to prevent users from executing Lua scripts. This can be done using ACL to restrict EVAL and EVALSHA commands."
+    },
+    {
+      "cve_id": "CVE-2026-23631",
+      "severity": "MEDIUM",
+      "cvss_score": 6.1,
+      "published_at": "2026-05-05T17:17:03.503",
+      "summary": "Redis is an in-memory data structure store. In all versions of redis-server with Lua scripting, an authenticated attacker can exploit the master-replica synchronization mechanism to trigger a use-after-free on replicas where replica-read-only is disabled or can be disabled, which may lead to remote code execution. A workaround is to prevent users from executing Lua scripts or avoid using replicas where replica-read-only is disabled. This is patched in version 8.6.3."
+    },
+    {
+      "cve_id": "CVE-2026-25243",
+      "severity": "HIGH",
+      "cvss_score": 7.7,
+      "published_at": "2026-05-05T17:17:03.667",
+      "summary": "Redis is an in-memory data structure store. In versions of redis-server up to 8.6.3, the RESTORE command does not properly validate serialized values. An authenticated attacker with permission to execute RESTORE can supply a crafted serialized payload that triggers invalid memory access and may lead to remote code execution. A workaround is to restrict access to the RESTORE command with ACL rules. This is patched in version 8.6.3."
+    }
+  ]
+}

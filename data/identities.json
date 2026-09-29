@@ -1,0 +1,7 @@
+[
+  {"username": "alice", "email": "alice@acme.example", "full_name": "Alice Park", "department": "Platform", "status": "active", "mfa_enabled": true},
+  {"username": "bob", "email": "bob@acme.example", "full_name": "Bob Reyes", "department": "Platform", "status": "active", "mfa_enabled": true},
+  {"username": "carol", "email": "carol@acme.example", "full_name": "Carol Diaz", "department": "Data", "status": "active", "mfa_enabled": false},
+  {"username": "dave", "email": "dave@acme.example", "full_name": "Dave Okafor", "department": "IT", "status": "disabled", "mfa_enabled": true},
+  {"username": "erin", "email": "erin@acme.example", "full_name": "Erin Walsh", "department": "Engineering", "status": "active", "mfa_enabled": true}
+]
