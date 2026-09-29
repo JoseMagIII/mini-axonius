@@ -44,13 +44,13 @@ def _insert_identities(conn: psycopg.Connection, run_id: int, identities: list[I
 
 
 def _save_vulnerabilities(conn, software: str, version: str, origin: str, vulns: list[nvd.Vulnerability]) -> None:
-    conn.execute("DELETE FROM nvd_lookups WHERE software = %s AND software_version = %s", [software, version])
-    conn.execute(
-        "INSERT INTO nvd_lookups (software, software_version, origin, total_results) VALUES (%s, %s, %s, %s)",
-        [software, version, origin, len(vulns)],
-    )
-    with conn.cursor() as cur:
-        cur.executemany(
+    with conn.transaction():
+        conn.execute("DELETE FROM nvd_lookups WHERE software = %s AND software_version = %s", [software, version])
+        conn.execute(
+            "INSERT INTO nvd_lookups (software, software_version, origin, total_results) VALUES (%s, %s, %s, %s)",
+            [software, version, origin, len(vulns)],
+        )
+        conn.cursor().executemany(
             """INSERT INTO vulnerabilities
                (software, software_version, cve_id, severity, cvss_score, published_at, summary)
                VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING""",
@@ -102,19 +102,17 @@ def run_sync(docker_client=None, nvd_client: nvd.NvdClient | None = None) -> dic
         with connect(autocommit=True) as conn:
             run_id = conn.execute("INSERT INTO sync_runs DEFAULT VALUES RETURNING id").fetchone()["id"]
             try:
+                observations = docker_hosts.collect(docker_client) + files.collect_edr(
+                    settings.data_dir / "edr_agents.json"
+                )
+                identities = files.collect_identities(settings.data_dir / "identities.json")
+                versions = {(o.software, o.software_version) for o in observations if o.software and o.software_version}
+                # NVD can take seconds per lookup, so it runs outside the transaction and caches its own results.
+                client = nvd_client or nvd.NvdClient(settings.nvd_api_key)
+                vulnerability_sources = refresh_vulnerabilities(conn, versions, client)
                 with conn.transaction():
-                    observations = docker_hosts.collect(docker_client) + files.collect_edr(
-                        settings.data_dir / "edr_agents.json"
-                    )
-                    identities = files.collect_identities(settings.data_dir / "identities.json")
                     _insert_observations(conn, run_id, observations)
                     _insert_identities(conn, run_id, identities)
-                    versions = {
-                        (o.software, o.software_version) for o in observations if o.software and o.software_version
-                    }
-                    vulnerability_sources = refresh_vulnerabilities(
-                        conn, versions, nvd_client or nvd.NvdClient(settings.nvd_api_key)
-                    )
             except Exception as error:
                 conn.execute(
                     "UPDATE sync_runs SET status = 'failed', finished_at = now(), error = %s WHERE id = %s",

@@ -1,50 +1,25 @@
-from itertools import count
-
 import pytest
-from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage, HumanMessage
 
 from app import sync
 from app.agent import build_agent, events_from_update
-from tests.conftest import FakeDocker, FakeNvd
+from tests.conftest import FakeDocker, FakeNvd, calls, scripted
 
 pytestmark = pytest.mark.integration
-_ids = count()
-
-
-class ScriptedModel(GenericFakeChatModel):
-    """Plays back a fixed list of Claude replies and records what it was sent."""
-
-    seen: list = []
-
-    def bind_tools(self, tools, **kwargs):
-        return self
-
-    def _generate(self, messages, *args, **kwargs):
-        self.seen.append(messages)
-        return super()._generate(messages, *args, **kwargs)
-
-
-def calls(*pairs):
-    return AIMessage("", tool_calls=[{"name": name, "args": args, "id": f"call_{next(_ids)}"} for name, args in pairs])
 
 
 def run(agent, question, thread="t1"):
     config = {"configurable": {"thread_id": thread}}
     events = []
     for update in agent.stream({"messages": [HumanMessage(question)], "steps": 0}, config, stream_mode="updates"):
-        for node, delta in update.items():
-            events.extend(events_from_update(node, delta))
+        for delta in update.values():
+            events.extend(events_from_update(delta))
     return events
 
 
 @pytest.fixture
 def synced(clean_db):
     sync.run_sync(FakeDocker(), FakeNvd())
-
-
-def scripted(*replies):
-    return ScriptedModel(messages=iter(replies), seen=[])
 
 
 def test_answers_from_real_query_results(synced):
@@ -56,10 +31,12 @@ def test_answers_from_real_query_results(synced):
     events = run(build_agent(model), "Which servers have no EDR?")
 
     assert [e["type"] for e in events] == ["tool_call", "result", "tool_call", "result", "answer"]
-    assert events[1]["tables"] >= 9
+    assert events[1]["summary"].startswith("Found ")
     result = events[3]
     assert result["rows"] == [{"hostname": "api-02"}, {"hostname": "jump-01"}]
     assert result["sql"].endswith("LIMIT 200")
+    assert result["summary"] == "Returned 2 rows"
+    assert events[0]["label"] == "Reading the database schema"
     assert events[-1]["text"] == "api-02 and jump-01 have no EDR agent."
 
 

@@ -10,8 +10,7 @@ from langchain_core.messages import AIMessage
 from app import main, risk, sync
 from app.agent import build_agent
 from app.config import get_settings
-from tests.conftest import FakeDocker, FakeNvd
-from tests.test_agent import calls, scripted
+from tests.conftest import FakeDocker, FakeNvd, calls, scripted
 
 pytestmark = pytest.mark.integration
 
@@ -42,16 +41,16 @@ def test_sync_then_summary(client):
     assert client.post("/api/sync").json()["observations"] == {"docker": 8, "edr": 7}
     body = client.get("/api/summary").json()
     assert body["last_sync"]["status"] == "succeeded"
-    assert body["gaps"] == {"missing-edr": 2, "vulnerable-software": 2, "orphaned-owner": 1, "ghost-assets": 1}
+    assert body["gaps"] == {"missing_edr": 2, "vulnerable_software": 2, "orphaned_owner": 1, "ghost_assets": 1}
     assert body["counts"] == {"assets": 9, "in_docker": 8, "with_edr": 7, "identities": 5, "active_without_mfa": 1}
 
 
 def test_assets_and_gaps(client):
     client.post("/api/sync")
     assert len(client.get("/api/assets").json()) == 9
-    assert [r["hostname"] for r in client.get("/api/gaps/missing-edr").json()] == ["jump-01", "api-02"]
-    assert client.get("/api/gaps/ghost-assets").json()[0]["hostname"] == "legacy-ftp-01"
-    assert client.get("/api/gaps/not-a-gap").status_code == 422
+    assert [r["hostname"] for r in client.get("/api/gaps/missing_edr").json()] == ["jump-01", "api-02"]
+    assert client.get("/api/gaps/ghost_assets").json()[0]["hostname"] == "legacy-ftp-01"
+    assert client.get("/api/gaps/sync_runs").status_code == 404
 
 
 def test_sync_conflict_returns_409(client):

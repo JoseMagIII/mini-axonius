@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { api, GAP_NAMES } from '@/lib/api'
+import { api } from '@/lib/api'
 import { timeAgo } from '@/lib/format'
 
 const ASSET_COLUMNS = ['hostname', 'sources', 'docker_state', 'environment', 'owner', 'software', 'software_version', 'ip_address']
@@ -54,8 +54,8 @@ export function InventoryTab({ claudeReady }: { claudeReady: boolean }) {
       {summary.data ? <StatCards summary={summary.data} /> : <Skeleton className="h-24 w-full" />}
 
       <div className="grid gap-4 xl:grid-cols-2">
-        {GAP_NAMES.map((name) => (
-          <GapCard key={name} name={name} count={summary.data?.gaps[name] ?? 0} />
+        {Object.entries(summary.data?.gaps ?? {}).map(([name, count]) => (
+          <GapCard key={name} name={name} count={count} />
         ))}
       </div>
 

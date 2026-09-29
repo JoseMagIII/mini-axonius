@@ -11,6 +11,9 @@ from app.config import get_settings
 
 READER_ROLE = "agent_reader"
 
+# Each gap is a view named gap_<name> in views.sql.
+GAPS = ("missing_edr", "vulnerable_software", "orphaned_owner", "ghost_assets")
+
 
 def connect(**kwargs) -> psycopg.Connection:
     return psycopg.connect(get_settings().database_url, row_factory=dict_row, **kwargs)

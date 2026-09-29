@@ -38,4 +38,4 @@ rogue:  ## Demo: start a server nobody registered
 		--label acme.owner=mallory --label acme.env=prod alpine:3.22 sleep infinity
 
 rogue-down:
-	docker rm -f acme-rogue-01
+	docker rm -f acme-rogue-01 2>/dev/null || true

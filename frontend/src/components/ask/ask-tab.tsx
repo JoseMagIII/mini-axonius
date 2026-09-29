@@ -1,11 +1,11 @@
 import { ArrowUp, MessageSquarePlus } from 'lucide-react'
-import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react'
+import { type FormEvent, type KeyboardEvent, memo, useEffect, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
 import { AgentSteps } from '@/components/ask/agent-steps'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { useChat } from '@/hooks/use-chat'
+import { type Turn, useChat } from '@/hooks/use-chat'
 
 const SUGGESTIONS = [
   'Which production servers have no EDR agent?',
@@ -14,6 +14,24 @@ const SUGGESTIONS = [
   'Which active users don’t have MFA?',
   'Delete the disabled users',
 ]
+
+// Memoized so each streamed event re-renders only the turn that changed.
+const TurnView = memo(function TurnView({ turn }: { turn: Turn }) {
+  const answer = turn.events.findLast((e) => e.type === 'answer')
+  return (
+    <div className="space-y-3">
+      <div className="ml-auto w-fit max-w-[85%] rounded-2xl bg-primary px-4 py-2 text-sm text-primary-foreground">
+        {turn.question}
+      </div>
+      <AgentSteps events={turn.events} streaming={turn.status === 'streaming'} />
+      {answer?.type === 'answer' && (
+        <div className="prose-answer text-sm leading-relaxed">
+          <Markdown>{answer.text}</Markdown>
+        </div>
+      )}
+    </div>
+  )
+})
 
 export function AskTab({ claudeReady }: { claudeReady: boolean }) {
   const { turns, ask, reset, busy } = useChat()
@@ -67,22 +85,9 @@ export function AskTab({ claudeReady }: { claudeReady: boolean }) {
         </div>
       ) : (
         <div className="space-y-6">
-          {turns.map((turn) => {
-            const answer = turn.events.findLast((e) => e.type === 'answer')
-            return (
-              <div key={turn.id} className="space-y-3">
-                <div className="ml-auto w-fit max-w-[85%] rounded-2xl bg-primary px-4 py-2 text-sm text-primary-foreground">
-                  {turn.question}
-                </div>
-                <AgentSteps events={turn.events} streaming={turn.status === 'streaming'} />
-                {answer?.type === 'answer' && (
-                  <div className="prose-answer text-sm leading-relaxed">
-                    <Markdown>{answer.text}</Markdown>
-                  </div>
-                )}
-              </div>
-            )
-          })}
+          {turns.map((turn) => (
+            <TurnView key={turn.id} turn={turn} />
+          ))}
         </div>
       )}
       <div ref={bottom} />

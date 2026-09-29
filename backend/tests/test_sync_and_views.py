@@ -61,7 +61,7 @@ def test_stopping_a_server_turns_it_into_a_ghost(clean_db):
 
 def test_rogue_server_shows_up_in_two_gaps(clean_db):
     docker = FakeDocker()
-    docker.fleet["rogue-01"] = ("alpine:3.22", "mallory", "prod")
+    docker.fleet["rogue-01"] = {"image": "alpine:3.22", "owner": "mallory", "env": "prod"}
     sync.run_sync(docker, FakeNvd())
     assert "rogue-01" in hostnames("gap_missing_edr")
     orphaned = {r["hostname"]: r["reason"] for r in query("SELECT * FROM gap_orphaned_owner")}

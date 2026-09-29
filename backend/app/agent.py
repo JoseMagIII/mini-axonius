@@ -1,6 +1,7 @@
 import json
 from typing import Annotated, Any
 
+from fastapi.encoders import jsonable_encoder
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, AnyMessage, SystemMessage, ToolMessage
@@ -33,8 +34,11 @@ class AgentState(TypedDict):
     steps: int
 
 
-def _json_safe(rows: list[dict]) -> list[dict]:
-    return json.loads(json.dumps(rows, default=str))
+TOOL_LABELS = {"get_schema": "Reading the database schema", "run_sql": "Running SQL"}
+
+
+def _check(sql: str):
+    return check_sql(sql, get_settings().query_row_limit)
 
 
 @tool(response_format="content_and_artifact")
@@ -53,25 +57,26 @@ def get_schema() -> tuple[str, dict]:
     text = "\n".join(
         f"{'view' if r['table_type'] == 'VIEW' else 'table'} {r['table_name']}: {r['columns']}" for r in rows
     )
-    return text, {"tables": len(rows)}
+    return text, {"summary": f"Found {len(rows)} tables and views"}
 
 
 @tool(response_format="content_and_artifact")
 def run_sql(sql: str) -> tuple[str, dict]:
     """Run one read-only PostgreSQL SELECT query against the inventory database and return the rows."""
-    checked = check_sql(sql, get_settings().query_row_limit)
+    # The guardrail node already vetted this; checking again here adds the row limit and keeps the tool safe alone.
+    checked = _check(sql)
     if not checked.allowed:
         return f"Blocked: {checked.reason}", {"sql": sql, "blocked": True, "reason": checked.reason}
     try:
         with reader_connection() as conn:
             cursor = conn.execute(checked.sql)
-            rows = _json_safe(cursor.fetchall())
+            rows = jsonable_encoder(cursor.fetchall())
             columns = [c.name for c in cursor.description or []]
     except DatabaseError as error:
         message = str(error).strip()
         return f"The query failed: {message}", {"sql": checked.sql, "error": message}
-    content = json.dumps({"row_count": len(rows), "rows": rows})
-    return content, {"sql": checked.sql, "columns": columns, "rows": rows, "row_count": len(rows)}
+    summary = f"Returned {len(rows)} {'row' if len(rows) == 1 else 'rows'}"
+    return json.dumps(rows), {"summary": summary, "sql": checked.sql, "columns": columns, "rows": rows}
 
 
 TOOLS = [get_schema, run_sql]
@@ -105,7 +110,7 @@ def build_agent(model: BaseChatModel | None = None, max_steps: int | None = None
 
     def guardrail(state: AgentState) -> dict:
         calls = state["messages"][-1].tool_calls
-        verdicts = {c["id"]: check_sql(c["args"].get("sql", "")) for c in calls if c["name"] == "run_sql"}
+        verdicts = {c["id"]: _check(c["args"].get("sql", "")) for c in calls if c["name"] == "run_sql"}
         blocked = {call_id: v for call_id, v in verdicts.items() if not v.allowed}
         if not blocked:
             return {}
@@ -141,7 +146,7 @@ def build_agent(model: BaseChatModel | None = None, max_steps: int | None = None
     return graph.compile(checkpointer=InMemorySaver())
 
 
-def events_from_update(node: str, update: dict[str, Any] | None) -> list[dict]:
+def events_from_update(update: dict[str, Any] | None) -> list[dict]:
     """Turns one graph step into the events the UI renders."""
     events = []
     for message in (update or {}).get("messages", []):
@@ -149,7 +154,8 @@ def events_from_update(node: str, update: dict[str, Any] | None) -> list[dict]:
             if message.tool_calls and message.text.strip():
                 events.append({"type": "thought", "text": message.text})
             events.extend(
-                {"type": "tool_call", "tool": c["name"], "sql": c["args"].get("sql")} for c in message.tool_calls
+                {"type": "tool_call", "label": TOOL_LABELS.get(c["name"], c["name"]), "sql": c["args"].get("sql")}
+                for c in message.tool_calls
             )
             if not message.tool_calls:
                 events.append({"type": "answer", "text": message.text})
@@ -163,11 +169,10 @@ def events_from_update(node: str, update: dict[str, Any] | None) -> list[dict]:
                 events.append(
                     {
                         "type": "error",
-                        "tool": message.name,
                         "sql": artifact.get("sql"),
                         "message": artifact.get("error", message.text),
                     }
                 )
             else:
-                events.append({"type": "result", "tool": message.name, **artifact})
+                events.append({"type": "result", **artifact})
     return events

@@ -5,11 +5,9 @@ export type Health = { database: boolean; docker: boolean; claude: boolean }
 export type Summary = {
   last_sync: { id: number; status: string; started_at: string; finished_at: string | null; error: string | null } | null
   counts: { assets: number; in_docker: number; with_edr: number; identities: number; active_without_mfa: number }
-  gaps: Record<GapName, number>
+  /** Open findings per gap check, keyed by the gap's name. */
+  gaps: Record<string, number>
 }
-
-export const GAP_NAMES = ['missing-edr', 'vulnerable-software', 'orphaned-owner', 'ghost-assets'] as const
-export type GapName = (typeof GAP_NAMES)[number]
 
 export type SyncResult = {
   run_id: number
@@ -35,10 +33,10 @@ export type RiskReport = {
 
 export type AgentEvent =
   | { type: 'thought'; text: string }
-  | { type: 'tool_call'; tool: string; sql?: string | null }
-  | { type: 'result'; tool: string; sql?: string; columns?: string[]; rows?: Row[]; row_count?: number; tables?: number }
+  | { type: 'tool_call'; label: string; sql?: string | null }
+  | { type: 'result'; summary: string; sql?: string; columns?: string[]; rows?: Row[] }
   | { type: 'blocked'; sql: string; reason: string }
-  | { type: 'error'; message: string; tool?: string; sql?: string | null }
+  | { type: 'error'; message: string; sql?: string | null }
   | { type: 'answer'; text: string }
   | { type: 'done' }
 
@@ -64,7 +62,7 @@ export const api = {
   health: () => request<Health>('/api/health'),
   summary: () => request<Summary>('/api/summary'),
   assets: () => request<Row[]>('/api/assets'),
-  gap: (name: GapName) => request<Row[]>(`/api/gaps/${name}`),
+  gap: (name: string) => request<Row[]>(`/api/gaps/${name}`),
   sync: () => request<SyncResult>('/api/sync', { method: 'POST' }),
   riskSummary: () => request<RiskReport>('/api/risk-summary', { method: 'POST' }),
 }

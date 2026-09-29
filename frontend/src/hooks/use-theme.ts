@@ -3,16 +3,11 @@ import { useEffect, useState } from 'react'
 export type Theme = 'dark' | 'light'
 const STORAGE_KEY = 'mini-axonius-theme'
 
-function storedTheme(): Theme {
-  try {
-    return localStorage.getItem(STORAGE_KEY) === 'light' ? 'light' : 'dark'
-  } catch {
-    return 'dark'
-  }
-}
-
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(storedTheme)
+  // index.html applies the saved theme before first paint; start from what it chose.
+  const [theme, setTheme] = useState<Theme>(() =>
+    document.documentElement.classList.contains('dark') ? 'dark' : 'light',
+  )
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')

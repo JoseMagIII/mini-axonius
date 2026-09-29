@@ -4,11 +4,13 @@ import type { Row } from '@/lib/api'
 import { formatCell, formatLabel } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
+export type CellRenderers = Partial<Record<string, (value: unknown, row: Row) => ReactNode>>
+
 type Props = {
   rows: Row[]
   columns?: string[]
   empty?: string
-  render?: Partial<Record<string, (value: unknown, row: Row) => ReactNode>>
+  render?: CellRenderers
   className?: string
 }
 

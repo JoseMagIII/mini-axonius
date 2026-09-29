@@ -1,11 +1,14 @@
+import asyncio
 import json
+from functools import lru_cache
 from typing import Literal
 
 import anthropic
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
 
 from app.config import get_settings
-from app.db import query
+from app.db import GAPS, connect
 
 Severity = Literal["critical", "high", "medium", "low"]
 
@@ -35,16 +38,14 @@ class RiskSummaryError(Exception):
         self.status_code = status_code
 
 
-GAP_VIEWS = {
-    "missing_edr": "gap_missing_edr",
-    "vulnerable_software": "gap_vulnerable_software",
-    "orphaned_owner": "gap_orphaned_owner",
-    "ghost_assets": "gap_ghost_assets",
-}
-
-
 def current_gaps() -> dict:
-    return {name: query(f"SELECT * FROM {view}") for name, view in GAP_VIEWS.items()}
+    with connect() as conn:
+        return {gap: conn.execute(f"SELECT * FROM gap_{gap}").fetchall() for gap in GAPS}
+
+
+@lru_cache
+def _client(api_key: str) -> anthropic.AsyncAnthropic:
+    return anthropic.AsyncAnthropic(api_key=api_key)
 
 
 async def summarize(client: anthropic.AsyncAnthropic | None = None) -> RiskReport:
@@ -53,9 +54,9 @@ async def summarize(client: anthropic.AsyncAnthropic | None = None) -> RiskRepor
     if client is None:
         if not settings.anthropic_api_key:
             raise RiskSummaryError("Add ANTHROPIC_API_KEY to .env to generate a risk summary.", 503)
-        client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+        client = _client(settings.anthropic_api_key)
 
-    gaps = json.dumps(current_gaps(), default=str)
+    gaps = json.dumps(jsonable_encoder(await asyncio.to_thread(current_gaps)))
     try:
         response = await client.messages.parse(
             model=settings.claude_model,

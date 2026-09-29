@@ -1,3 +1,8 @@
+locals {
+  # Acme's fleet lives in data/fleet.json so the tests use the same servers. Add one there with one line.
+  servers = jsondecode(file("${path.module}/../data/fleet.json"))
+}
+
 resource "docker_network" "acme" {
   name = "${var.company}-net"
 }
@@ -14,6 +19,13 @@ resource "docker_volume" "postgres" {
 resource "docker_container" "postgres" {
   name  = "${var.company}-postgres"
   image = docker_image.postgres.image_id
+
+  # Set explicitly: some Docker runtimes add these defaults, which Terraform would otherwise see as drift.
+  log_driver = "json-file"
+  log_opts = {
+    max-size = "20m"
+    max-file = "5"
+  }
 
   env = [
     "POSTGRES_DB=assets",
@@ -46,7 +58,7 @@ resource "docker_container" "postgres" {
 
 module "server" {
   source   = "./modules/server"
-  for_each = var.servers
+  for_each = local.servers
 
   hostname = each.key
   company  = var.company
@@ -55,5 +67,6 @@ module "server" {
   owner    = each.value.owner
   env      = each.value.env
   role     = each.value.role
-  command  = each.value.command
+  # Plain OS images exit immediately without a long-running command.
+  command = startswith(each.value.image, "alpine") ? ["sleep", "infinity"] : null
 }

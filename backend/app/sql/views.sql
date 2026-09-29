@@ -1,5 +1,11 @@
 -- Views are rebuilt on every start, so column changes apply without a migration.
-DROP VIEW IF EXISTS latest_observations, latest_identities CASCADE;
+DO $$
+DECLARE view_name text;
+BEGIN
+    FOR view_name IN SELECT viewname FROM pg_views WHERE schemaname = 'public' LOOP
+        EXECUTE format('DROP VIEW IF EXISTS %I CASCADE', view_name);
+    END LOOP;
+END $$;
 
 -- Rows from the most recent successful sync only; older runs stay for history queries.
 CREATE VIEW latest_observations AS

@@ -22,14 +22,3 @@ variable "postgres_password" {
   sensitive   = true
   default     = "acme-admin"
 }
-
-variable "servers" {
-  description = "Fake servers to run, keyed by hostname"
-  type = map(object({
-    image   = string
-    owner   = string
-    env     = string
-    role    = string
-    command = optional(list(string))
-  }))
-}

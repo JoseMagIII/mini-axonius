@@ -9,17 +9,17 @@ import { renderWithClient } from '@/test/render'
 const summary: Summary = {
   last_sync: { id: 3, status: 'succeeded', started_at: new Date().toISOString(), finished_at: new Date().toISOString(), error: null },
   counts: { assets: 9, in_docker: 8, with_edr: 7, identities: 5, active_without_mfa: 1 },
-  gaps: { 'missing-edr': 2, 'vulnerable-software': 2, 'orphaned-owner': 1, 'ghost-assets': 1 },
+  gaps: { missing_edr: 2, vulnerable_software: 2, orphaned_owner: 1, ghost_assets: 1 },
 }
 
 const routes = {
   'GET /api/summary': () => json(summary),
   'GET /api/assets': () => json([{ hostname: 'web-01', sources: ['docker', 'edr'], docker_state: 'running' }]),
-  'GET /api/gaps/missing-edr': () => json([{ hostname: 'jump-01', environment: 'prod', owner: 'dave' }]),
-  'GET /api/gaps/vulnerable-software': () =>
+  'GET /api/gaps/missing_edr': () => json([{ hostname: 'jump-01', environment: 'prod', owner: 'dave' }]),
+  'GET /api/gaps/vulnerable_software': () =>
     json([{ hostname: 'cache-01', software: 'redis', software_version: '6.0.20', cve_count: 16, max_cvss: 9.9, top_cves: ['CVE-2025-49844'] }]),
-  'GET /api/gaps/orphaned-owner': () => json([{ hostname: 'jump-01', owner: 'dave', owner_status: 'disabled', reason: 'Owner account is disabled' }]),
-  'GET /api/gaps/ghost-assets': () => json([]),
+  'GET /api/gaps/orphaned_owner': () => json([{ hostname: 'jump-01', owner: 'dave', owner_status: 'disabled', reason: 'Owner account is disabled' }]),
+  'GET /api/gaps/ghost_assets': () => json([]),
 }
 
 beforeEach(() => {

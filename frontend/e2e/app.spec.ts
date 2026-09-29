@@ -1,7 +1,8 @@
 import { execSync } from 'node:child_process'
 import { expect, type Page, test } from '@playwright/test'
 
-const docker = (args: string) => execSync(`docker ${args}`, { stdio: 'pipe' }).toString()
+const docker = (args: string) => execSync(`docker ${args}`, { stdio: 'pipe' })
+const make = (target: string) => execSync(`make -C .. ${target}`, { stdio: 'pipe' })
 
 function gapCard(page: Page, title: string) {
   return page.locator('[data-slot="card"]').filter({ has: page.getByText(title, { exact: true }) })
@@ -14,7 +15,7 @@ async function syncNow(page: Page) {
 
 test.afterAll(() => {
   docker('start acme-web-02')
-  execSync('docker rm -f acme-rogue-01 || true', { stdio: 'pipe' })
+  make('rogue-down')
 })
 
 test('inventory shows the planted gaps from the live containers', async ({ page }) => {
@@ -44,14 +45,12 @@ test('stopping a server turns it into a ghost after a sync', async ({ page }) =>
 
 test('a rogue server shows up as unprotected and unowned', async ({ page }) => {
   await page.goto('/')
-  docker(
-    'run -d --name acme-rogue-01 --hostname rogue-01 --label acme.managed=true --label acme.owner=mallory --label acme.env=prod alpine:3.22 sleep infinity',
-  )
+  make('rogue')
   await syncNow(page)
   await expect(gapCard(page, 'Missing EDR agent').getByRole('cell', { name: 'rogue-01' })).toBeVisible()
   await expect(gapCard(page, 'Orphaned owner').getByText('Owner not in identity provider')).toBeVisible()
 
-  docker('rm -f acme-rogue-01')
+  make('rogue-down')
   await syncNow(page)
   await expect(gapCard(page, 'Missing EDR agent').getByRole('cell', { name: 'rogue-01' })).toHaveCount(0)
 })

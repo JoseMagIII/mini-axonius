@@ -1,24 +1,12 @@
 import json
+from types import SimpleNamespace
 
 import httpx
 import pytest
 import respx
 
 from app.adapters import docker_hosts, files, nvd
-
-
-def container(name="acme-web-01", hostname="web-01", image="nginx:1.21.6", status="running", **labels):
-    return {
-        "Id": "a1b2c3d4e5f6a7b8c9d0",
-        "Name": f"/{name}",
-        "Config": {
-            "Hostname": hostname,
-            "Image": image,
-            "Labels": {"acme.owner": "alice", "acme.env": "prod", **labels},
-        },
-        "State": {"Status": status},
-        "NetworkSettings": {"Networks": {"acme-net": {"IPAddress": "172.20.0.3"}}},
-    }
+from tests.conftest import fake_container
 
 
 @pytest.mark.parametrize(
@@ -37,18 +25,17 @@ def test_parse_image(image, expected):
 
 
 def test_docker_container_becomes_an_observation():
-    observation = docker_hosts.to_observation(container())
+    observation = docker_hosts.to_observation(fake_container("web-01"))
     assert observation.source == "docker"
-    assert observation.source_id == "a1b2c3d4e5f6"
-    assert (observation.hostname, observation.ip_address, observation.state) == ("web-01", "172.20.0.3", "running")
+    assert observation.source_id == "web-01000000"
+    assert (observation.hostname, observation.ip_address, observation.state) == ("web-01", "172.20.0.9", "running")
     assert (observation.software, observation.software_version) == ("nginx", "1.21.6")
     assert (observation.owner, observation.environment) == ("alice", "prod")
     assert observation.raw["name"] == "acme-web-01"
 
 
 def test_stopped_container_has_no_ip():
-    stopped = container(status="exited")
-    stopped["NetworkSettings"]["Networks"]["acme-net"]["IPAddress"] = ""
+    stopped = fake_container("web-01", status="exited")
     observation = docker_hosts.to_observation(stopped)
     assert observation.ip_address is None
     assert observation.state == "exited"
@@ -58,14 +45,14 @@ def test_collect_asks_docker_only_for_acme_containers():
     class FakeContainers:
         def list(self, **kwargs):
             self.kwargs = kwargs
-            return [type("C", (), {"attrs": container()})()]
+            return [SimpleNamespace(attrs=fake_container("web-01"))]
 
     class FakeClient:
         containers = FakeContainers()
 
     client = FakeClient()
     assert len(docker_hosts.collect(client)) == 1
-    assert client.containers.kwargs == {"all": True, "filters": {"label": "acme.managed=true"}}
+    assert client.containers.kwargs == {"all": True, "filters": {"label": docker_hosts.MANAGED_LABEL}}
 
 
 def test_edr_export_keeps_vendor_hostnames(tmp_path):

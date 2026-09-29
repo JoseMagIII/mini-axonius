@@ -2,21 +2,22 @@ import argparse
 import json
 from dataclasses import asdict
 
-from app.adapters import nvd
+from app.adapters import docker_hosts, nvd
 from app.config import get_settings
 from app.db import init_db
 from app.sync import run_sync
-
-# Software versions the Terraform fleet runs; the fallback covers the ones NVD tracks.
-FALLBACK_VERSIONS = [("nginx", "1.21.6"), ("nginx", "1.29.1"), ("redis", "6.0.20")]
 
 
 def save_nvd_fallback() -> None:
     """Saves today's NVD results so a sync still works if NVD is down during the demo."""
     settings = get_settings()
+    fleet = json.loads((settings.data_dir / "fleet.json").read_text())
+    versions = sorted({docker_hosts.parse_image(server["image"]) for server in fleet.values()})
     client = nvd.NvdClient(settings.nvd_api_key)
     saved = {}
-    for software, version in FALLBACK_VERSIONS:
+    for software, version in versions:
+        if not version or not nvd.cpe_for(software, version):
+            continue
         vulns = client.vulnerabilities(nvd.cpe_for(software, version))
         saved[f"{software}:{version}"] = [asdict(v) for v in vulns]
         print(f"{software}:{version}: {len(vulns)} CVEs")

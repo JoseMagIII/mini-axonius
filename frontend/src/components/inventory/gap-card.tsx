@@ -1,27 +1,27 @@
 import { useQuery } from '@tanstack/react-query'
-import type { ReactNode } from 'react'
-import { DataTable } from '@/components/data-table'
+import { type CellRenderers, DataTable } from '@/components/data-table'
 import { SeverityBadge } from '@/components/severity-badge'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { api, type GapName, type Row } from '@/lib/api'
-import { severityFromScore, timeAgo } from '@/lib/format'
+import { api } from '@/lib/api'
+import { formatLabel, severityFromScore, timeAgo } from '@/lib/format'
 
 type GapSpec = {
   title: string
   description: string
-  columns: string[]
-  render?: Partial<Record<string, (value: unknown, row: Row) => ReactNode>>
+  columns?: string[]
+  render?: CellRenderers
 }
 
-const GAPS: Record<GapName, GapSpec> = {
-  'missing-edr': {
+// Display text for the gaps the API reports; a new gap still renders with its raw columns.
+const GAPS: Record<string, GapSpec> = {
+  missing_edr: {
     title: 'Missing EDR agent',
     description: 'Running servers the EDR has never reported.',
     columns: ['hostname', 'environment', 'owner', 'software', 'ip_address'],
   },
-  'vulnerable-software': {
+  vulnerable_software: {
     title: 'Vulnerable software',
     description: 'Servers whose image version has CVEs in the NVD.',
     columns: ['hostname', 'software', 'software_version', 'cve_count', 'max_cvss', 'top_cves'],
@@ -30,12 +30,12 @@ const GAPS: Record<GapName, GapSpec> = {
       top_cves: (value) => <span className="whitespace-normal">{(value as string[]).slice(0, 2).join(', ')}</span>,
     },
   },
-  'orphaned-owner': {
+  orphaned_owner: {
     title: 'Orphaned owner',
     description: 'Servers owned by a disabled or unknown account.',
     columns: ['hostname', 'owner', 'owner_status', 'reason'],
   },
-  'ghost-assets': {
+  ghost_assets: {
     title: 'Ghost assets',
     description: 'The EDR still reports these, but nothing is running.',
     columns: ['hostname', 'reason', 'edr_status', 'edr_last_checkin'],
@@ -43,8 +43,8 @@ const GAPS: Record<GapName, GapSpec> = {
   },
 }
 
-export function GapCard({ name, count }: { name: GapName; count: number }) {
-  const spec = GAPS[name]
+export function GapCard({ name, count }: { name: string; count: number }) {
+  const spec = GAPS[name] ?? { title: formatLabel(name), description: '' }
   const { data, isPending, isError } = useQuery({ queryKey: ['gap', name], queryFn: () => api.gap(name) })
 
   return (

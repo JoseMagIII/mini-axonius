@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { DataTable } from '@/components/data-table'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import type { AgentEvent } from '@/lib/api'
+import { cn } from '@/lib/utils'
 
 type StepEvent = Exclude<AgentEvent, { type: 'answer' } | { type: 'done' }>
 
@@ -14,11 +15,12 @@ function SqlBlock({ sql }: { sql: string }) {
   )
 }
 
-function Step({ icon, children, tone }: { icon: ReactNode; children: ReactNode; tone?: 'danger' | 'warn' }) {
-  const color = tone === 'danger' ? 'text-critical' : tone === 'warn' ? 'text-medium' : 'text-muted-foreground'
+const TONES = { danger: 'text-critical', warn: 'text-medium' }
+
+function Step({ icon, children, tone }: { icon: ReactNode; children: ReactNode; tone?: keyof typeof TONES }) {
   return (
     <li className="flex gap-2.5">
-      <span className={`mt-0.5 ${color}`}>{icon}</span>
+      <span className={cn('mt-0.5 text-muted-foreground', tone && TONES[tone])}>{icon}</span>
       <div className="min-w-0 flex-1 text-sm">{children}</div>
     </li>
   )
@@ -31,17 +33,14 @@ function StepView({ event }: { event: StepEvent }) {
     case 'tool_call':
       return (
         <Step icon={<Database className="size-4" />}>
-          <p>{event.tool === 'get_schema' ? 'Reading the database schema' : 'Running SQL'}</p>
+          <p>{event.label}</p>
           {event.sql && <SqlBlock sql={event.sql} />}
         </Step>
       )
     case 'result':
-      if (event.tool === 'get_schema') {
-        return <Step icon={<TableProperties className="size-4" />}><p className="text-muted-foreground">Found {event.tables} tables and views</p></Step>
-      }
       return (
         <Step icon={<TableProperties className="size-4" />}>
-          <p className="text-muted-foreground">Returned {event.row_count} {event.row_count === 1 ? 'row' : 'rows'}</p>
+          <p className="text-muted-foreground">{event.summary}</p>
           {event.rows && event.rows.length > 0 && (
             <div className="mt-1.5 max-h-72 overflow-auto rounded-md border">
               <DataTable rows={event.rows} columns={event.columns} />

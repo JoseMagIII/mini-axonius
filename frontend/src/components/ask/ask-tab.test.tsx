@@ -12,8 +12,8 @@ it('streams the agent steps and the answer', async () => {
     'POST /api/chat': () =>
       sse([
         frames(
-          { type: 'tool_call', tool: 'run_sql', sql: 'SELECT hostname FROM gap_missing_edr LIMIT 200' },
-          { type: 'result', tool: 'run_sql', columns: ['hostname'], rows: [{ hostname: 'api-02' }, { hostname: 'jump-01' }], row_count: 2 },
+          { type: 'tool_call', label: 'Running SQL', sql: 'SELECT hostname FROM gap_missing_edr LIMIT 200' },
+          { type: 'result', summary: 'Returned 2 rows', columns: ['hostname'], rows: [{ hostname: 'api-02' }, { hostname: 'jump-01' }] },
           { type: 'answer', text: '**api-02** and **jump-01** have no EDR.' },
           { type: 'done' },
         ),
@@ -35,7 +35,7 @@ it('shows guardrail blocks', async () => {
     'POST /api/chat': () =>
       sse([
         frames(
-          { type: 'tool_call', tool: 'run_sql', sql: 'DELETE FROM identities' },
+          { type: 'tool_call', label: 'Running SQL', sql: 'DELETE FROM identities' },
           { type: 'blocked', sql: 'DELETE FROM identities', reason: 'Only SELECT queries are allowed.' },
           { type: 'answer', text: 'I can only read data.' },
           { type: 'done' },

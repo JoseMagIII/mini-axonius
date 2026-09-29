@@ -5,7 +5,7 @@ import { frames, json, mockFetch, sse } from '@/test/fetch-mock'
 afterEach(() => vi.unstubAllGlobals())
 
 it('parses SSE frames even when they arrive split across reads', async () => {
-  const body = frames({ type: 'tool_call', tool: 'run_sql', sql: 'SELECT 1' }, { type: 'answer', text: 'One.' }, { type: 'done' })
+  const body = frames({ type: 'tool_call', label: 'Running SQL', sql: 'SELECT 1' }, { type: 'answer', text: 'One.' }, { type: 'done' })
   const fetch = mockFetch({ 'POST /api/chat': () => sse([body.slice(0, 17), body.slice(17, 60), body.slice(60)]) })
   const events: AgentEvent[] = []
 
