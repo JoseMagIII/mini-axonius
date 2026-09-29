@@ -37,7 +37,9 @@ def test_messy_edr_hostnames_merge_with_docker(clean_db):
 def test_gap_views_tell_the_demo_story(clean_db):
     sync.run_sync(FakeDocker(), FakeNvd())
     assert hostnames("gap_missing_edr") == ["api-02", "jump-01"]
-    assert hostnames("gap_ghost_assets") == ["legacy-ftp-01"]
+    [ghost] = query("SELECT hostname, edr_last_checkin FROM gap_ghost_assets")
+    assert ghost["hostname"] == "legacy-ftp-01"
+    assert ghost["edr_last_checkin"].isoformat() == "2026-06-14T22:10:41+00:00"  # From the EDR, not our sync time
     assert query("SELECT hostname, reason FROM gap_orphaned_owner") == [
         {"hostname": "jump-01", "reason": "Owner account is disabled"}
     ]

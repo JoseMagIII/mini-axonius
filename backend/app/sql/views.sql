@@ -1,5 +1,8 @@
+-- Views are rebuilt on every start, so column changes apply without a migration.
+DROP VIEW IF EXISTS latest_observations, latest_identities CASCADE;
+
 -- Rows from the most recent successful sync only; older runs stay for history queries.
-CREATE OR REPLACE VIEW latest_observations AS
+CREATE VIEW latest_observations AS
 WITH latest_run AS (
     SELECT max(id) AS id FROM sync_runs WHERE status = 'succeeded'
 ),
@@ -15,13 +18,13 @@ ranked AS (
 )
 SELECT * FROM ranked WHERE rank_in_source = 1;
 
-CREATE OR REPLACE VIEW latest_identities AS
+CREATE VIEW latest_identities AS
 SELECT i.*
 FROM identities i
 WHERE i.sync_run_id = (SELECT max(id) FROM sync_runs WHERE status = 'succeeded');
 
 -- One row per real asset, merged from every source that reports it.
-CREATE OR REPLACE VIEW assets_unified AS
+CREATE VIEW assets_unified AS
 WITH history AS (
     SELECT normalize_hostname(o.hostname) AS asset_key,
            min(o.observed_at) AS first_seen,
@@ -36,6 +39,7 @@ SELECT l.asset_key AS hostname,
        bool_or(l.source = 'edr') AS has_edr,
        max(l.state) FILTER (WHERE l.source = 'docker') AS docker_state,
        max(l.state) FILTER (WHERE l.source = 'edr') AS edr_status,
+       max((l.raw ->> 'last_checkin')::timestamptz) FILTER (WHERE l.source = 'edr') AS edr_last_checkin,
        max(host(l.ip_address)) FILTER (WHERE l.source = 'docker') AS ip_address,
        coalesce(max(l.os) FILTER (WHERE l.source = 'edr'), max(l.os)) AS os,
        max(l.software) FILTER (WHERE l.source = 'docker') AS software,
@@ -49,14 +53,14 @@ JOIN history h USING (asset_key)
 GROUP BY l.asset_key, h.first_seen, h.last_seen;
 
 -- Running servers with no EDR agent reporting in.
-CREATE OR REPLACE VIEW gap_missing_edr AS
+CREATE VIEW gap_missing_edr AS
 SELECT hostname, software, software_version, owner, environment, ip_address
 FROM assets_unified
 WHERE in_docker AND docker_state = 'running' AND NOT has_edr
 ORDER BY environment = 'prod' DESC, hostname;
 
 -- Servers whose software version has known CVEs, worst first.
-CREATE OR REPLACE VIEW gap_vulnerable_software AS
+CREATE VIEW gap_vulnerable_software AS
 SELECT a.hostname,
        a.software,
        a.software_version,
@@ -73,7 +77,7 @@ GROUP BY a.hostname, a.software, a.software_version, a.owner, a.environment
 ORDER BY max_cvss DESC NULLS LAST, cve_count DESC;
 
 -- Servers owned by someone who is disabled or unknown to the identity provider.
-CREATE OR REPLACE VIEW gap_orphaned_owner AS
+CREATE VIEW gap_orphaned_owner AS
 SELECT a.hostname,
        a.owner,
        a.environment,
@@ -86,13 +90,13 @@ WHERE a.in_docker AND (i.username IS NULL OR i.status <> 'active')
 ORDER BY a.hostname;
 
 -- EDR still reports these, but they aren't running: stale records or decommissioned hosts.
-CREATE OR REPLACE VIEW gap_ghost_assets AS
+CREATE VIEW gap_ghost_assets AS
 SELECT hostname,
        edr_status,
        docker_state,
        CASE WHEN NOT in_docker THEN 'Not found in Docker'
             ELSE 'Container is ' || docker_state END AS reason,
-       last_seen
+       edr_last_checkin
 FROM assets_unified
 WHERE has_edr AND (NOT in_docker OR docker_state <> 'running')
 ORDER BY hostname;
