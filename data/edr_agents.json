@@ -1,0 +1,9 @@
+[
+  {"agent_id": "edr-7f3a", "hostname": "WEB-01.acme.local", "os": "Linux", "agent_version": "7.12.0", "status": "online", "last_checkin": "2026-09-30T08:55:12Z"},
+  {"agent_id": "edr-91c2", "hostname": "web-02.acme.local", "os": "Linux", "agent_version": "7.12.0", "status": "online", "last_checkin": "2026-09-30T08:56:03Z"},
+  {"agent_id": "edr-2b88", "hostname": "Cache-01", "os": "Linux", "agent_version": "7.9.4", "status": "online", "last_checkin": "2026-09-30T08:54:47Z"},
+  {"agent_id": "edr-c410", "hostname": "api-01.ACME.LOCAL", "os": "Linux", "agent_version": "7.12.0", "status": "online", "last_checkin": "2026-09-30T08:55:59Z"},
+  {"agent_id": "edr-55de", "hostname": " worker-01 ", "os": "Linux", "agent_version": "7.11.2", "status": "online", "last_checkin": "2026-09-30T08:53:30Z"},
+  {"agent_id": "edr-0e19", "hostname": "BUILD-01", "os": "Linux", "agent_version": "6.8.0", "status": "online", "last_checkin": "2026-09-30T08:52:18Z"},
+  {"agent_id": "edr-a7f0", "hostname": "legacy-ftp-01.acme.local", "os": "Linux", "agent_version": "5.2.1", "status": "offline", "last_checkin": "2026-06-14T22:10:41Z"}
+]
