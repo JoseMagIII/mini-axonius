@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 from langchain_core.messages import AIMessage
 
-from app import main, risk, sync
+from app import demo, main, risk, sync
 from app.agent import build_agent
 from app.config import get_settings
 from tests.conftest import FakeDocker, FakeNvd, calls, scripted
@@ -19,6 +19,8 @@ pytestmark = pytest.mark.integration
 @pytest.fixture
 def client(clean_db, monkeypatch):
     monkeypatch.setattr(main, "run_sync", lambda: sync.run_sync(FakeDocker(), FakeNvd()))
+    monkeypatch.setattr(main, "docker_client", FakeDocker)
+    monkeypatch.setattr(main, "reset_demo", lambda client: demo.reset_demo(client, FakeNvd()))
     with TestClient(main.app) as test_client:
         yield test_client
 
@@ -185,3 +187,10 @@ async def test_risk_summary_rejects_a_malformed_report(clean_db):
         invalid = error
     with pytest.raises(risk.RiskSummaryError, match="expected format"):
         await risk.summarize(FakeAnthropic(error=invalid))
+
+
+def test_demo_reset_endpoint(client):
+    client.post("/api/sync")
+    body = client.post("/api/demo/reset").json()
+    assert body["sync"]["run_id"] == 1
+    assert client.get("/api/summary").json()["last_sync"]["id"] == 1

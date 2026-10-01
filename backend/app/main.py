@@ -14,6 +14,7 @@ from app import risk
 from app.agent import build_agent, events_from_update
 from app.config import get_settings
 from app.db import GAPS, init_db, query
+from app.demo import reset_demo
 from app.sync import SyncInProgress, run_sync
 
 logging.basicConfig(level=logging.INFO)
@@ -95,6 +96,17 @@ def sync() -> dict:
         raise HTTPException(409, str(error)) from error
     except DockerException as error:
         log.exception("Sync failed")
+        raise HTTPException(502, f"Couldn't reach Docker: {error}") from error
+
+
+@app.post("/api/demo/reset")
+def demo_reset() -> dict:
+    try:
+        return reset_demo(docker_client())
+    except SyncInProgress as error:
+        raise HTTPException(409, str(error)) from error
+    except DockerException as error:
+        log.exception("Demo reset failed")
         raise HTTPException(502, f"Couldn't reach Docker: {error}") from error
 
 

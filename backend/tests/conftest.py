@@ -1,7 +1,6 @@
 import json
 import os
 from itertools import count
-from types import SimpleNamespace
 
 import psycopg
 import pytest
@@ -41,10 +40,23 @@ class FakeDocker:
         return self
 
     def list(self, **_):
-        return [
-            SimpleNamespace(attrs=fake_container(host, **spec, status="exited" if host in self.stopped else "running"))
-            for host, spec in self.fleet.items()
-        ]
+        return [FakeContainer(self, host) for host in self.fleet]
+
+    def ping(self):
+        return True
+
+
+class FakeContainer:
+    def __init__(self, docker, hostname):
+        self.docker, self.hostname = docker, hostname
+        self.status = "exited" if hostname in docker.stopped else "running"
+        self.attrs = fake_container(hostname, **docker.fleet[hostname], status=self.status)
+
+    def start(self):
+        self.docker.stopped.discard(self.hostname)
+
+    def remove(self, force=False):
+        del self.docker.fleet[self.hostname]
 
 
 class FakeNvd:

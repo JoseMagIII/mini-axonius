@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { Moon, Radar, Sun } from 'lucide-react'
+import { useState } from 'react'
 import { AskTab } from '@/components/ask/ask-tab'
 import { InventoryTab } from '@/components/inventory/inventory-tab'
+import { ResetDemoButton } from '@/components/reset-demo-button'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
@@ -23,6 +25,8 @@ export default function App() {
   const { theme, toggle } = useTheme()
   const health = useQuery({ queryKey: ['health'], queryFn: api.health, refetchInterval: 15_000 })
   const claudeReady = health.data?.claude ?? false
+  // Bumped on reset so the Ask tab remounts with a fresh chat thread.
+  const [demoRun, setDemoRun] = useState(0)
 
   return (
     <div className="min-h-svh">
@@ -37,7 +41,8 @@ export default function App() {
               <p className="text-xs text-muted-foreground">Docker, EDR, identity, and NVD data merged</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <ResetDemoButton onReset={() => setDemoRun((n) => n + 1)} />
             <StatusDot label="Database" ok={health.data?.database} />
             <StatusDot label="Docker" ok={health.data?.docker} />
             <StatusDot label="Claude" ok={health.data ? claudeReady : undefined} />
@@ -58,7 +63,7 @@ export default function App() {
             <InventoryTab claudeReady={claudeReady} />
           </TabsContent>
           <TabsContent value="ask">
-            <AskTab claudeReady={claudeReady} />
+            <AskTab key={demoRun} claudeReady={claudeReady} />
           </TabsContent>
         </Tabs>
       </main>

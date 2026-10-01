@@ -52,6 +52,8 @@ Without an API key, the inventory, gaps, and sync all work, and the chat explain
 
 Two commands change the picture live: `docker stop acme-web-02` turns web-02 into a ghost, and `make rogue` starts an unregistered server with an unknown owner. Click **Sync now** after either one.
 
+**Reset demo** in the header puts everything back: it restarts stopped fleet servers, removes extra ones, clears sync history, and runs a fresh sync.
+
 ## Tests
 
 ```bash

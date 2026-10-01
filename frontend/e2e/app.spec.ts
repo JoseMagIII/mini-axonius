@@ -55,6 +55,22 @@ test('a rogue server shows up as unprotected and unowned', async ({ page }) => {
   await expect(gapCard(page, 'Missing EDR agent').getByRole('cell', { name: 'rogue-01' })).toHaveCount(0)
 })
 
+test('reset demo restores the planted state', async ({ page }) => {
+  await page.goto('/')
+  docker('stop acme-web-02')
+  make('rogue')
+  await syncNow(page)
+  await expect(gapCard(page, 'Ghost assets').getByRole('cell', { name: 'web-02' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Reset demo' }).click()
+
+  await expect(page.getByText('Fleet started web-02; removed rogue-01.')).toBeVisible()
+  await expect(page.getByText('Last sync #1', { exact: false })).toBeVisible()
+  await expect(gapCard(page, 'Ghost assets').getByRole('cell', { name: 'web-02' })).toHaveCount(0)
+  await expect(gapCard(page, 'Missing EDR agent').getByRole('cell', { name: 'rogue-01' })).toHaveCount(0)
+  expect(docker('ps --filter name=acme-rogue-01 -q').toString().trim()).toBe('')
+})
+
 test('ask tab explains how to connect Claude when no key is set', async ({ page, request }) => {
   const health = await (await request.get('/api/health')).json()
   test.skip(health.claude, 'Claude is connected; this checks the no-key path')

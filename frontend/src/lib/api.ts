@@ -17,6 +17,8 @@ export type SyncResult = {
   seconds: number
 }
 
+export type ResetResult = { started: string[]; removed: string[]; missing: string[]; sync: SyncResult }
+
 export type Severity = 'critical' | 'high' | 'medium' | 'low'
 
 export type RiskReport = {
@@ -65,6 +67,7 @@ export const api = {
   gap: (name: string) => request<Row[]>(`/api/gaps/${name}`),
   sync: () => request<SyncResult>('/api/sync', { method: 'POST' }),
   riskSummary: () => request<RiskReport>('/api/risk-summary', { method: 'POST' }),
+  resetDemo: () => request<ResetResult>('/api/demo/reset', { method: 'POST' }),
 }
 
 /** Reads the agent's server-sent events and hands each one to `onEvent` as it arrives. */
