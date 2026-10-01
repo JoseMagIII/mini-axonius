@@ -13,7 +13,7 @@ from langgraph.prebuilt import ToolNode
 from psycopg import Error as DatabaseError
 from typing_extensions import TypedDict
 
-from app.config import get_settings
+from app.config import anthropic_headers, get_settings
 from app.db import reader_connection
 from app.guardrail import check_sql
 
@@ -88,6 +88,7 @@ def default_model() -> BaseChatModel:
         settings.claude_model,
         model_provider="anthropic",
         api_key=settings.anthropic_api_key,
+        default_headers=anthropic_headers(settings),
         temperature=0,
         max_tokens=4096,
     )

@@ -44,8 +44,9 @@ def current_gaps() -> dict:
 
 
 @lru_cache
-def _client(api_key: str) -> anthropic.AsyncAnthropic:
-    return anthropic.AsyncAnthropic(api_key=api_key)
+def _client(api_key: str, workspace_id: str | None) -> anthropic.AsyncAnthropic:
+    headers = {"anthropic-workspace-id": workspace_id} if workspace_id else None
+    return anthropic.AsyncAnthropic(api_key=api_key, default_headers=headers)
 
 
 async def summarize(client: anthropic.AsyncAnthropic | None = None) -> RiskReport:
@@ -54,7 +55,7 @@ async def summarize(client: anthropic.AsyncAnthropic | None = None) -> RiskRepor
     if client is None:
         if not settings.anthropic_api_key:
             raise RiskSummaryError("Add ANTHROPIC_API_KEY to .env to generate a risk summary.", 503)
-        client = _client(settings.anthropic_api_key)
+        client = _client(settings.anthropic_api_key, settings.anthropic_workspace_id)
 
     gaps = json.dumps(jsonable_encoder(await asyncio.to_thread(current_gaps)))
     try:

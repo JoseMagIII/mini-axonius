@@ -129,3 +129,12 @@ def scripted(*replies):
 
 def calls(*pairs):
     return AIMessage("", tool_calls=[{"name": name, "args": args, "id": f"call_{next(_ids)}"} for name, args in pairs])
+
+
+@pytest.fixture(autouse=True)
+def no_real_keys(monkeypatch):
+    """Keeps tests from reading the developer's .env keys and calling paid APIs."""
+    from app.config import get_settings
+
+    for name in ("anthropic_api_key", "anthropic_workspace_id", "nvd_api_key"):
+        monkeypatch.setattr(get_settings(), name, None)

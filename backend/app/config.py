@@ -14,12 +14,18 @@ class Settings(BaseSettings):
     data_dir: Path = ROOT / "data"
 
     anthropic_api_key: str | None = None
+    # Only needed for organization keys that aren't scoped to a workspace.
+    anthropic_workspace_id: str | None = None
     claude_model: str = "claude-haiku-4-5"
     agent_max_steps: int = 8
     query_row_limit: int = 200
 
     nvd_api_key: str | None = None
     nvd_cache_hours: int = 24
+
+
+def anthropic_headers(settings: Settings) -> dict[str, str]:
+    return {"anthropic-workspace-id": settings.anthropic_workspace_id} if settings.anthropic_workspace_id else {}
 
 
 @lru_cache

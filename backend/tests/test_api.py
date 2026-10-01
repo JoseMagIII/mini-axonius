@@ -194,3 +194,14 @@ def test_demo_reset_endpoint(client):
     body = client.post("/api/demo/reset").json()
     assert body["sync"]["run_id"] == 1
     assert client.get("/api/summary").json()["last_sync"]["id"] == 1
+
+
+def test_workspace_id_is_sent_to_claude(monkeypatch):
+    from app import agent
+
+    monkeypatch.setattr(get_settings(), "anthropic_api_key", "test-key")
+    monkeypatch.setattr(get_settings(), "anthropic_workspace_id", "wrkspc_123")
+    assert agent.default_model().default_headers == {"anthropic-workspace-id": "wrkspc_123"}
+    client = risk._client("test-key", "wrkspc_123")
+    assert client.default_headers["anthropic-workspace-id"] == "wrkspc_123"
+    assert "anthropic-workspace-id" not in risk._client("test-key", None).default_headers
