@@ -11,6 +11,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 from psycopg import Error as DatabaseError
+from psycopg.sql import SQL, Identifier
 from typing_extensions import TypedDict
 
 from app.config import anthropic_headers, get_settings
@@ -24,7 +25,7 @@ software, vulnerabilities, and people by querying the inventory database.
 - Use run_sql with PostgreSQL. Prefer the views: assets_unified has one row per asset, and the gap_* views \
 list known security gaps. Raw tables keep the full sync history.
 - Hostnames are lowercase short names, like web-01. Use normalize_hostname() on raw tables.
-- The database is read-only. Never try to change data.
+- Filter text columns only on the exact values get_schema lists, for example environment = 'prod'.
 - Answer in a few short sentences or a short list, and name the hostnames involved. If the data can't \
 answer the question, say so."""
 
@@ -35,6 +36,13 @@ class AgentState(TypedDict):
 
 
 TOOL_LABELS = {"get_schema": "Reading the database schema", "run_sql": "Running SQL"}
+
+# Listing real values stops the model guessing, e.g. filtering on 'production' when the data says 'prod'.
+VALUE_COLUMNS = {
+    "assets_unified": ("environment", "docker_state", "edr_status", "software"),
+    "latest_identities": ("status", "department"),
+    "vulnerabilities": ("severity",),
+}
 
 
 def _check(sql: str):
@@ -54,9 +62,23 @@ def get_schema() -> tuple[str, dict]:
                GROUP BY c.table_name, t.table_type
                ORDER BY t.table_type DESC, c.table_name"""
         ).fetchall()
+        values = [
+            f"{table}.{column}: "
+            + ", ".join(
+                str(v["value"])
+                for v in conn.execute(
+                    SQL("SELECT DISTINCT {c} AS value FROM {t} WHERE {c} IS NOT NULL ORDER BY 1").format(
+                        c=Identifier(column), t=Identifier(table)
+                    )
+                )
+            )
+            for table, columns in VALUE_COLUMNS.items()
+            for column in columns
+        ]
     text = "\n".join(
         f"{'view' if r['table_type'] == 'VIEW' else 'table'} {r['table_name']}: {r['columns']}" for r in rows
     )
+    text += "\n\nValues in use:\n" + "\n".join(values)
     return text, {"summary": f"Found {len(rows)} tables and views"}
 
 
